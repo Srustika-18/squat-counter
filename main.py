@@ -7,6 +7,7 @@ import simpleaudio as sa
 
 wave_obj = sa.WaveObject.from_wave_file("ding.wav")
 
+
 def findAngle(a, b, c, minVis=0.8):
     if a.visibility > minVis and b.visibility > minVis and c.visibility > minVis:
         bc = np.array([c.x - b.x, c.y - b.y, c.z - b.z])
@@ -22,6 +23,7 @@ def findAngle(a, b, c, minVis=0.8):
     else:
         return -1
 
+
 def legState(angle):
     if angle < 0:
         return 0  # Joint is not being picked up
@@ -31,6 +33,7 @@ def legState(angle):
         return 2  # Transition range
     else:
         return 3  # Upright range
+
 
 if __name__ == "__main__":
     mp_drawing = mp.solutions.drawing_utils
@@ -80,10 +83,14 @@ if __name__ == "__main__":
                 state = rState * lState
 
                 # Debug information
-                cv2.putText(frame, f"R Angle: {rAngle:.2f}", (10, 220), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-                cv2.putText(frame, f"L Angle: {lAngle:.2f}", (10, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-                cv2.putText(frame, f"R State: {rState}", (10, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-                cv2.putText(frame, f"L State: {lState}", (10, 310), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                cv2.putText(frame, f"R Angle: {rAngle:.2f}", (10, 220),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                cv2.putText(frame, f"L Angle: {lAngle:.2f}", (10, 250),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                cv2.putText(frame, f"R State: {rState}", (10, 280),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                cv2.putText(frame, f"L State: {lState}", (10, 310),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
                 # Final state is product of two leg states
                 # 0 -> One or both legs not being picked up
@@ -128,12 +135,13 @@ if __name__ == "__main__":
 
                 # print("Squats: " + (str)(repCount))
 
-
             # Display rep count on the frame
-            cv2.putText(frame, f"Reps: {repCount}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 10)
-            
+            cv2.putText(frame, f"Reps: {repCount}", (10, 90),
+                        cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 10)
+
             # Display message on the frame
-            cv2.putText(frame, message, (10, 170), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
+            cv2.putText(frame, message, (10, 170),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
 
             cv2.imshow("Squat Rep Counter", frame)
             if cv2.waitKey(1) & 0xFF == 27:
