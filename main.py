@@ -119,6 +119,10 @@ if __name__ == "__main__":
                 cv2.putText(frame, message, (10, 170),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
 
+                # Display the player's name on the frame
+                cv2.putText(frame, f"Player: {person}", (10, 400),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 75, 59), 5)
+
                 cv2.imshow(f"Squat Rep Counter - {person}", frame)
                 if cv2.waitKey(1) & 0xFF == 27:
                     break
