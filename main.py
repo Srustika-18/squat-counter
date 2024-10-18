@@ -2,8 +2,8 @@ import sys
 import mediapipe as mp
 import cv2
 import numpy as np
-# from playsound import playsound
 import simpleaudio as sa
+import time
 
 wave_obj = sa.WaveObject.from_wave_file("ding.wav")
 
@@ -49,11 +49,20 @@ if __name__ == "__main__":
     while cap.read()[1] is None:
         print("Waiting for Video")
 
+    num_people = int(input("Enter the number of people: ").strip())
+    people = []
+    for i in range(num_people):
+        name = input(f"Enter name for person {i+1}: ").strip()
+        people.append({'name': name, 'reps': 0, 'time': 0})
+
+    num_squats = int(input("Enter the number of squats to complete: ").strip())
+
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        repCount = 0
+        person_idx = 0
         lastState = 9  # Start in upright position
         message = ""
 
+        start_time = time.time()
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret or frame is None:
@@ -92,51 +101,37 @@ if __name__ == "__main__":
                 cv2.putText(frame, f"L State: {lState}", (10, 310),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
-                # Final state is product of two leg states
-                # 0 -> One or both legs not being picked up
-                # Even -> One or both legs are still transitioning
-                # Odd
-                #   1 -> Squatting
-                #   9 -> Upright
-                #   3 -> One squatting, one upright
-
-                # Only update lastState on 1 or 9
-
+                # Squat logic
                 if state == 0:  # One or both legs not detected
-                    if rState == 0:
-                        message = ("Right Leg Not Detected")
-                    if lState == 0:
-                        message = ("Left Leg Not Detected")
                     message = "Legs not fully detected"
-
-                elif state % 2 == 0 or rState != lState:  # One or both legs still transitioning
+                elif state % 2 == 0 or rState != lState:  # Transitioning
                     if lastState == 1:
-                        if lState == 2 or lState == 1:
-                            message = ("Fully extend left leg")
-                        if rState == 2 or lState == 1:
-                            message = ("Fully extend right leg")
                         message = "Fully extend legs"
-
                     else:
-                        if lState == 2 or lState == 3:
-                            message = ("Fully retract left leg")
-                        if rState == 2 or lState == 3:
-                            message = ("Fully retract right leg")
                         message = "Fully retract legs"
                 else:
                     if state == 1 or state == 9:
                         if lastState != state:
                             lastState = state
                             if lastState == 1:
-                                repCount += 1
-                                message = f"Rep completed!"
-                                # playsound("ding.wav")
+                                people[person_idx]['reps'] += 1
+                                message = f"Rep completed for {people[person_idx]['name']}!"
                                 wave_obj.play()
 
-                # print("Squats: " + (str)(repCount))
+                                if people[person_idx]['reps'] >= num_squats:
+                                    people[person_idx]['time'] = time.time() - start_time
+                                    print(f"{people[person_idx]['name']} completed {num_squats} squats in {people[person_idx]['time']:.2f} seconds!")
+
+                                    # Switch to next person
+                                    person_idx += 1
+                                    if person_idx >= num_people:
+                                        print("All participants have completed their squats.")
+                                        break
+                                    else:
+                                        start_time = time.time()  # Reset time for the next person
 
             # Display rep count on the frame
-            cv2.putText(frame, f"Reps: {repCount}", (10, 90),
+            cv2.putText(frame, f"Reps: {people[person_idx]['reps']}", (10, 90),
                         cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 10)
 
             # Display message on the frame
@@ -149,3 +144,8 @@ if __name__ == "__main__":
 
     cap.release()
     cv2.destroyAllWindows()
+
+    # Final results for all participants
+    print("\nFinal Results:")
+    for person in people:
+        print(f"{person['name']} completed {num_squats} squats in {person['time']:.2f} seconds.")
