@@ -7,12 +7,14 @@ import time
 
 wave_obj = sa.WaveObject.from_wave_file("ding.wav")
 
+
 def findAngle(a, b, c, minVis=0.8):
     if a.visibility > minVis and b.visibility > minVis and c.visibility > minVis:
         bc = np.array([c.x - b.x, c.y - b.y, c.z - b.z])
         ba = np.array([a.x - b.x, a.y - b.y, a.z - b.z])
 
-        angle = np.arccos((np.dot(ba, bc)) / (np.linalg.norm(ba) * np.linalg.norm(bc))) * (180 / np.pi)
+        angle = np.arccos((np.dot(ba, bc)) / (np.linalg.norm(ba)
+                          * np.linalg.norm(bc))) * (180 / np.pi)
 
         if angle > 180:
             return 360 - angle
@@ -20,6 +22,7 @@ def findAngle(a, b, c, minVis=0.8):
             return angle
     else:
         return -1
+
 
 def legState(angle):
     if angle < 0:
@@ -31,6 +34,7 @@ def legState(angle):
     else:
         return 3  # Upright range
 
+
 if __name__ == "__main__":
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
@@ -41,9 +45,10 @@ if __name__ == "__main__":
     for i in range(num_persons):
         name = input(f"Enter name of person {i+1}: ").strip()
         names.append(name)
-    
+
     # Input the number of squats to perform
-    total_squats = int(input("Enter the number of squats to perform: ").strip())
+    total_squats = int(
+        input("Enter the number of squats to perform: ").strip())
 
     results = []  # To store each person's name and time taken
 
@@ -108,7 +113,8 @@ if __name__ == "__main__":
                                 end_time = time.time()  # End timer
                                 time_taken = end_time - start_time
                                 results.append((person, time_taken))
-                                print(f"{person} completed in {time_taken:.2f} seconds.")
+                                print(
+                                    f"{person} completed in {time_taken:.2f} seconds.")
                                 break
 
                 # Display rep count on the frame
@@ -136,16 +142,30 @@ if __name__ == "__main__":
         rank = i + 1
         print(f"{rank}. {name} - {time_taken:.2f} seconds")
 
-    # Determine the winner and top 3
-    if len(results) >= 3:
-        print(f"\nWinner: {results[0][0]}")
-        print(f"2nd Place: {results[1][0]}")
-        print(f"3rd Place: {results[2][0]}")
-    elif len(results) == 2:
-        print(f"\nWinner: {results[0][0]}")
-        print(f"2nd Place: {results[1][0]}")
-    else:
-        print(f"\nWinner: {results[0][0]}")
+    # Create the leaderboard screen
+    leaderboard_height = 600
+    leaderboard_width = 1024
+    leaderboard = np.zeros(
+        (leaderboard_height, leaderboard_width, 3), dtype=np.uint8)
+
+    # Title for the leaderboard
+    cv2.putText(leaderboard, "LEADERBOARD", (30, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 5)
+
+    # Display top 3 players
+    for i, (name, time_taken) in enumerate(results[:3]):
+        cv2.putText(leaderboard, f"{i+1}. {name} - {time_taken:.2f} secs", (30, 200 + i * 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 255), 2)
+
+    # Show message at the bottom
+    cv2.putText(leaderboard, "Press ESC to exit", (30, 550),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+    # Show the leaderboard until user presses ESC
+    while True:
+        cv2.imshow("LEADERBOARD", leaderboard)
+        if cv2.waitKey(1) & 0xFF == 27:  # Exit on ESC
+            break
 
     cap.release()
     cv2.destroyAllWindows()
