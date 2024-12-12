@@ -54,6 +54,37 @@ def display_leaderboard(results):
         if cv2.waitKey(1) & 0xFF == 27:  # Wait for 'Escape' key
             break
 
+# Angle Visualizer
+
+
+def draw_angle_indicator(frame, angle, position):
+    """
+    Draws a visual indicator for the angle on the frame.
+    """
+    x, y = position
+    cv2.rectangle(frame, (x, y), (x + 300, y + 50),
+                  (50, 50, 50), -1)  # Background bar
+    cv2.rectangle(frame, (x, y), (x + int((angle / 180) * 300),
+                  y + 50), (0, 255, 0), -1)  # Fill bar
+    cv2.putText(frame, f"Angle: {int(angle)} deg", (x + 10, y + 35),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+
+# Updated feedback logic with text guidance
+def feedback_on_squat(state, lastState, lState, rState):
+    """
+    Returns feedback text based on the squat state.
+    """
+    if state == 0:  # Joint not detected
+        return "Legs not fully detected"
+    elif state % 2 == 0 or rState != lState:  # Transitioning state
+        if lastState == 1:
+            return "Fully extend legs" if rState == 2 or lState == 2 else "Correct your posture"
+        else:
+            return "Fully retract legs" if rState == 3 or lState == 3 else "Adjust your squat depth"
+    else:
+        return "Good form!" if state in {1, 9} else ""
+
 
 if __name__ == "__main__":
     mp_drawing = mp.solutions.drawing_utils
@@ -97,7 +128,7 @@ if __name__ == "__main__":
                 if not ret or frame is None:
                     print('Error: Image not found or could not be loaded.')
                     break
-                frame = cv2.resize(frame, (1024, 600))
+                frame = cv2.resize(frame, (1920, 1080))
 
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_rgb.flags.writeable = False
@@ -121,68 +152,37 @@ if __name__ == "__main__":
                     lState = legState(lAngle)
                     state = rState * lState
 
-                    # Debug information
-                    cv2.putText(frame, f"R Angle: {rAngle:.2f}", (10, 220),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-                    cv2.putText(frame, f"L Angle: {lAngle:.2f}", (10, 250),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-                    cv2.putText(frame, f"R State: {rState}", (10, 280),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-                    cv2.putText(frame, f"L State: {lState}", (10, 310),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                    # Visual Angle Indicator
+                    draw_angle_indicator(frame, rAngle, (50, 500))
+                    draw_angle_indicator(frame, lAngle, (450, 500))
 
-                    # Final state is product of two leg states
-                    if state == 0:  # One or both legs not detected
-                        if rState == 0:
-                            message = "Right Leg Not Detected"
-                        if lState == 0:
-                            message = "Left Leg Not Detected"
-                        message = "Legs not fully detected"
+                    # Feedback text
+                    message = feedback_on_squat(
+                        state, lastState, lState, rState)
 
-                    elif state % 2 == 0 or rState != lState:  # One or both legs still transitioning
-                        if lastState == 1:
-                            if lState == 2 or lState == 1:
-                                message = "Fully extend left leg"
-                            if rState == 2 or lState == 1:
-                                message = "Fully extend right leg"
-                            message = "Fully extend legs"
+                    # Rep counting logic
+                    if state in {1, 9} and lastState != state:
+                        lastState = state
+                        if lastState == 1:  # Squat position
+                            repCount += 1
+                            wave_obj.play()
+                            message = "Rep completed!"
 
-                        else:
-                            if lState == 2 or lState == 3:
-                                message = "Fully retract left leg"
-                            if rState == 2 or lState == 3:
-                                message = "Fully retract right leg"
-                            message = "Fully retract legs"
-                    else:
-                        if state == 1 or state == 9:
-                            if lastState != state:
-                                lastState = state
-                                if lastState == 1:  # Squat position
-                                    repCount += 1
-                                    message = "Rep completed!"
-                                    wave_obj.play()
+                    # End condition
+                    if repCount >= total_squats:
+                        end_time = time.time()
+                        time_taken = end_time - start_time
+                        results.append((person, time_taken))
+                        print(f"{person} completed in {time_taken:.2f} seconds.")
+                        break
 
-                            # Stop when the person completes the required reps
-                            if repCount >= total_squats:
-                                end_time = time.time()  # End timer
-                                time_taken = end_time - start_time
-                                results.append((person, time_taken))
-                                print(
-                                    f"{person} completed in {time_taken:.2f} seconds.")
-                                break
-
-                # Display rep count on the frame
+                # Display UI elements
                 cv2.putText(frame, f"Reps: {repCount}", (10, 90),
                             cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 10)
-
-                # Display message on the frame
                 cv2.putText(frame, message, (10, 170),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
-
-                # Display the player's name on the frame
                 cv2.putText(frame, f"Player: {person}", (10, 400),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 75, 59), 5)
-
                 cv2.imshow(f"Squat Rep Counter - {person}", frame)
                 if cv2.waitKey(1) & 0xFF == 27:
                     break
