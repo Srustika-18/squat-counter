@@ -3,8 +3,16 @@ import mediapipe as mp
 import numpy as np
 import simpleaudio as sa
 import time
+import sys
+import os
 
-wave_obj = sa.WaveObject.from_wave_file("ding.wav")
+if getattr(sys, 'frozen', False):  # Running as a PyInstaller bundle
+    base_path = sys._MEIPASS
+else:
+    base_path = os.path.abspath(".")
+
+wave_path = os.path.join(base_path, "ding.wav")
+wave_obj = sa.WaveObject.from_wave_file(wave_path)
 
 
 def calculate_angle(a, b, c):

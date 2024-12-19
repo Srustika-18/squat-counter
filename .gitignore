@@ -2,3 +2,5 @@ venv/
 # ding.wav
 # video.mp4
 ildoonet-tf-pose-estimation/
+build/
+dist/
